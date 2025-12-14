@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediaVault - Download from Anywhere</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🎬</div>
+            <h1>MediaVault</h1>
+            <p class="subtitle">Download media from anywhere</p>
+            <p class="platforms">YouTube • Instagram • Facebook • TikTok & More</p>
+        </div>
+
+        <form id="downloadForm">
+            <div class="input-group">
+                <label for="videoUrl">Media URL</label>
+                <input 
+                    type="text" 
+                    id="videoUrl" 
+                    placeholder="https://www.youtube.com/watch?v=... or Instagram/Facebook link"
+                    required
+                >
+            </div>
+
+            <div class="format-group">
+                <label>Select Format</label>
+                <div class="format-options">
+                    <div class="format-option">
+                        <input type="radio" id="mp3" name="format" value="mp3">
+                        <label for="mp3" class="format-label">🎵 MP3<br><span class="small-text">Audio Only</span></label>
+                    </div>
+                    <div class="format-option">
+                        <input type="radio" id="mp4" name="format" value="mp4" checked>
+                        <label for="mp4" class="format-label">🎬 MP4<br><span class="small-text">Video + Audio</span></label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quality Selection for MP4 -->
+            <div class="quality-group" id="qualityGroup">
+                <label>Video Quality <span class="small-text">(for MP4)</span></label>
+                <div class="quality-loading" id="qualityLoading">
+                    <div class="loader" style="margin: 0 auto 5px; border-width: 3px; width: 25px; height: 25px;"></div>
+                    Loading available qualities...
+                </div>
+                <div class="quality-error" id="qualityError"></div>
+                <div class="quality-options" id="qualityOptions">
+                    <div class="quality-option">
+                        <input type="radio" id="quality-1080" name="quality" value="1080" checked>
+                        <label for="quality-1080">1080p</label>
+                    </div>
+                    <div class="quality-option">
+                        <input type="radio" id="quality-720" name="quality" value="720">
+                        <label for="quality-720">720p</label>
+                    </div>
+                    <div class="quality-option">
+                        <input type="radio" id="quality-480" name="quality" value="480">
+                        <label for="quality-480">480p</label>
+                    </div>
+                    <div class="quality-option">
+                        <input type="radio" id="quality-360" name="quality" value="360">
+                        <label for="quality-360">360p</label>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="download-btn" id="downloadBtn">
+                Download
+            </button>
+        </form>
+
+        <div id="status" class="status"></div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
