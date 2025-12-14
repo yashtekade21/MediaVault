@@ -51,19 +51,16 @@ pip install -r backend/requirements.txt
 
 Required packages typically include:
 - `yt-dlp` - Core video downloading library
-- `flask` or `fastapi` - Web framework
+- `flask` - Web framework
 - `requests` - HTTP requests
 
 ### Step 3: Run the Backend Server
 ```bash
 # Python Flask
 python backend/app.py
-
-# Or Node.js Express
-node backend/app.js
 ```
 
-Server will run on `http://localhost:5000` (or configured port)
+Server will run on `http://localhost:5000`
 
 ### Step 4: Open Frontend
 1. Open `index.html` in your web browser
@@ -86,7 +83,7 @@ python -m http.server 8000
 
 ### Backend Settings
 Edit `backend/app.py` or `.env` file:
-- Change server port
+- Change server port (default: 5000)
 - Set download directory
 - Configure rate limiting
 - Adjust timeout settings
@@ -110,7 +107,7 @@ Edit `backend/app.py` or `.env` file:
 - Ensure URL is complete and valid
 
 **Quality options not loading?**
-- Check internet connection
+- Check if backend server is running on `http://localhost:5000`
 - Verify video is publicly available
 - Wait for server response
 
@@ -118,6 +115,7 @@ Edit `backend/app.py` or `.env` file:
 - Check backend server is running
 - Verify video isn't restricted/private
 - Try a different video
+- Check browser console for errors (F12)
 
 ## Browser Support
 
@@ -157,10 +155,14 @@ Users are responsible for respecting copyright laws and platform terms of servic
 
 **v1.0.0** - December 2025
 
+## Status
+
+**Development Mode** - Currently running on localhost. Not yet deployed to production.
+
 ## Support
 
-For issues and questions, please check the troubleshooting section or create an issue in the repository.
+For issues and questions, please check the troubleshooting section or contact the author.
 
 ---
 
-**Note:** This application requires a working backend server. Ensure the server is running before using the frontend.
+**Note:** This application requires a working backend server. Ensure the server is running on `http://localhost:5000` before using the frontend.
