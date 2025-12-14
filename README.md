@@ -133,7 +133,8 @@ Your Name / Your Organization
 
 ## License
 
-This project is provided as-is for personal use. Respect copyright laws and platform terms of service.
+Copyright © 2025 Yash Tekade. All rights reserved.
+This software is proprietary and confidential.
 
 ## Disclaimer
 
