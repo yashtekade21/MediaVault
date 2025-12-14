@@ -129,16 +129,29 @@ Edit `backend/app.py` or `.env` file:
 
 ## Author
 
-Your Name / Your Organization
+**Yash Tekade**
 
 ## License
 
-Copyright © 2025 Yash Tekade. All rights reserved.
-This software is proprietary and confidential.
+**Copyright © 2025 Yash Tekade. All rights reserved.**
+
+This is a proprietary project. The source code is provided for educational viewing purposes only.
+
+**Permitted:**
+- ✓ Educational viewing and learning
+- ✓ Personal, non-commercial use
+
+**Not Permitted:**
+- ✗ Commercial use without written permission
+- ✗ Redistribution or sharing
+- ✗ Modification and republishing
+- ✗ Creating derivative works
+
+For licensing inquiries or commercial use, please contact the author.
 
 ## Disclaimer
 
-Users are responsible for respecting copyright laws and platform terms of service. This tool is for personal use only.
+Users are responsible for respecting copyright laws and platform terms of service when downloading content. This tool is for personal, non-commercial use only.
 
 ## Version
 
