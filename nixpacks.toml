@@ -1,0 +1,11 @@
+[providers]
+python = "3.12"
+
+[build]
+cmds = ["pip install -r requirements.txt"]
+
+[nix]
+pkgs = ["ffmpeg", "libavcodec"]
+
+[start]
+cmd = "gunicorn app:app"
