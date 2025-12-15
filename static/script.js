@@ -8,6 +8,10 @@ const qualityLoading = document.getElementById('qualityLoading');
 const qualityError = document.getElementById('qualityError');
 const qualityOptions = document.getElementById('qualityOptions');
 
+
+let isDownloading = false;
+let lastValidatedURL = '';
+
 const SUPPORTED_PLATFORMS = {
     youtube: {
         domains: ['youtube.com', 'youtu.be'],
@@ -156,31 +160,11 @@ function getUserFriendlyError(errorMessage) {
     if (errorLower.includes('network') || errorLower.includes('connection')) {
         return 'Network error. Please check your connection and try again.';
     }
+    if (errorLower.includes('ffmpeg')) {
+        return 'FFmpeg is required for MP3 downloads. Please ensure FFmpeg is installed.';
+    }
 
     return `Unable to process video: ${errorMessage}`;
-}
-
-async function validateURLExists(url) {
-    try {
-        const response = await fetch(url, {
-            method: 'HEAD',
-            mode: 'no-cors'
-        });
-
-        if (response.ok || response.status === 200 || response.status === 204) {
-            return { valid: true, message: 'URL verified' };
-        } else if (response.status === 404) {
-            return { valid: false, message: 'Video not found (404)' };
-        } else if (response.status === 403) {
-            return { valid: false, message: 'Access denied to this video (403)' };
-        } else if (response.status === 410) {
-            return { valid: false, message: 'Video has been deleted (410)' };
-        } else {
-            return { valid: true, message: 'URL format valid' };
-        }
-    } catch (error) {
-        return { valid: true, message: 'URL format valid' };
-    }
 }
 
 function clearQualityOptions() {
@@ -193,62 +177,84 @@ function updateButtonState() {
     const url = videoUrlInput.value.trim();
     const formatValidation = validateURLFormat(url);
     
-    if (formatValidation.valid) {
+    if (formatValidation.valid && !isDownloading) {
         downloadBtn.disabled = false;
-        statusDiv.className = '';
-        statusDiv.innerHTML = '';
+        if (statusDiv.classList.contains('error')) {
+            statusDiv.className = '';
+            statusDiv.innerHTML = '';
+        }
     } else {
         downloadBtn.disabled = true;
-        if (url.length > 0) {
+        if (url.length > 0 && !isDownloading) {
             showStatus(formatValidation.message, 'error');
-        } else {
+        } else if (url.length === 0 && !isDownloading) {
             statusDiv.className = '';
             statusDiv.innerHTML = '';
         }
     }
 }
 
-videoUrlInput.addEventListener('input', () => {
+// Debounce function for real-time validation
+let validationTimeout;
+function debounce(func, delay) {
+    return function(...args) {
+        clearTimeout(validationTimeout);
+        validationTimeout = setTimeout(() => func.apply(this, args), delay);
+    };
+}
+
+videoUrlInput.addEventListener('input', debounce(() => {
+    // Skip validation during download
+    if (isDownloading) {
+        return;
+    }
+    
     const url = videoUrlInput.value.trim();
     const format = document.querySelector('input[name="format"]:checked').value;
     
-    updateButtonState();
-    
-    if (format === 'mp4' && url) {
-        const formatValidation = validateURLFormat(url);
-        if (formatValidation.valid) {
-            clearQualityOptions();
-            loadFormats(url);
-        } else {
-            clearQualityOptions();
-        }
-    }
-});
-
-videoUrlInput.addEventListener('blur', async () => {
-    const url = videoUrlInput.value.trim();
+    // Real-time validation
     if (url.length > 0) {
         const formatValidation = validateURLFormat(url);
-        if (!formatValidation.valid) {
-            showStatus(formatValidation.message, 'error');
-            return;
-        }
-
-        showStatus('Verifying URL...', 'loading');
-        const existsValidation = await validateURLExists(url);
         
-        if (!existsValidation.valid) {
-            showStatus(existsValidation.message, 'error');
-            downloadBtn.disabled = true;
+        if (formatValidation.valid) {
+            lastValidatedURL = url;
+            
+            // Show success message
+            showStatus(`Valid ${formatValidation.platform} URL detected`, 'success');
+            downloadBtn.disabled = false;
+            
+            // Load quality options if MP4 is selected
+            if (format === 'mp4') {
+                clearQualityOptions();
+                loadFormats(url);
+            }
         } else {
-            statusDiv.className = '';
-            statusDiv.innerHTML = '';
+            // Show error message
+            showStatus(formatValidation.message, 'error');
+            downloadBtn.disabled = true;
+            clearQualityOptions();
         }
+    } else {
+        // Clear status when input is empty
+        statusDiv.className = '';
+        statusDiv.innerHTML = '';
+        downloadBtn.disabled = true;
+        clearQualityOptions();
     }
-});
+}, 500)); // 500ms delay for debouncing
 
 formatOptions.forEach(option => {
     option.addEventListener('change', (e) => {
+        // Prevent format change during download
+        if (isDownloading) {
+            e.preventDefault();
+            // Revert to previous selection
+            const previousFormat = e.target.value === 'mp3' ? 'mp4' : 'mp3';
+            document.getElementById(previousFormat).checked = true;
+            showStatus('Please wait for current download to finish before changing format', 'error');
+            return;
+        }
+        
         const url = videoUrlInput.value.trim();
         const formatValidation = validateURLFormat(url);
         
@@ -286,13 +292,15 @@ async function loadFormats(url) {
                 const option = document.createElement('div');
                 option.className = 'quality-option';
                 option.innerHTML = `
-                    <input type="radio" id="quality-${format.height}" name="quality" value="${format.height}">
+                    <input type="radio" id="quality-${format.height}" name="quality" value="${format.height}" ${isDownloading ? 'disabled' : ''}>
                     <label for="quality-${format.height}">${format.resolution}</label>
                 `;
                 qualityOptions.appendChild(option);
             });
 
-            document.querySelector('input[name="quality"]').checked = true;
+            if (!isDownloading) {
+                document.querySelector('input[name="quality"]').checked = true;
+            }
         } else if (data.error) {
             const userFriendlyError = getUserFriendlyError(data.error);
             showQualityError(userFriendlyError);
@@ -316,9 +324,23 @@ function showQualityError(message) {
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
+    // Prevent multiple simultaneous downloads
+    if (isDownloading) {
+        showStatus('Please wait for the current download to finish', 'error');
+        return;
+    }
+
     const url = videoUrlInput.value.trim();
     const format = document.querySelector('input[name="format"]:checked').value;
-    const quality = document.querySelector('input[name="quality"]:checked').value;
+    
+    // Handle missing quality for MP3 format
+    const qualityElement = document.querySelector('input[name="quality"]:checked');
+    const quality = qualityElement ? qualityElement.value : '1080';
+
+    console.log('=== Download Started ===');
+    console.log('URL:', url);
+    console.log('Format:', format);
+    console.log('Quality:', quality);
 
     const formatValidation = validateURLFormat(url);
     if (!formatValidation.valid) {
@@ -326,8 +348,21 @@ form.addEventListener('submit', async (e) => {
         return;
     }
 
+    isDownloading = true;
+    lastValidatedURL = url;
+    
+    // Disable all inputs
+    videoUrlInput.disabled = true;
     downloadBtn.disabled = true;
     downloadBtn.textContent = 'Processing...';
+    
+    // Disable format radio buttons
+    formatOptions.forEach(option => option.disabled = true);
+    
+    // Disable quality radio buttons
+    const qualityRadios = document.querySelectorAll('input[name="quality"]');
+    qualityRadios.forEach(radio => radio.disabled = true);
+    
     showStatus('<div class="loader"></div>Downloading... Please wait', 'loading');
 
     try {
@@ -340,30 +375,60 @@ form.addEventListener('submit', async (e) => {
         });
 
         const data = await response.json();
+        console.log('Server response:', data);
 
         if (response.ok && data.success) {
             showStatus(`Success! Downloading: ${data.title}`, 'success');
             
+            // Create and trigger download
             const link = document.createElement('a');
             link.href = `/get-file/${data.filepath}`;
             link.download = data.filename;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            
+            // Reset after successful download
+            setTimeout(() => {
+                resetDownloadState();
+                showStatus('Download complete! Ready for next download.', 'success');
+            }, 2000);
+            
         } else if (data.error) {
             const userFriendlyError = getUserFriendlyError(data.error);
             showStatus(`Error: ${userFriendlyError}`, 'error');
+            resetDownloadState();
         } else {
             showStatus('Error: Unable to process download. Please try again.', 'error');
+            resetDownloadState();
         }
     } catch (error) {
+        console.error('Download error:', error);
         const userFriendlyError = getUserFriendlyError(error.message);
         showStatus(`Error: ${userFriendlyError}`, 'error');
-    } finally {
-        downloadBtn.disabled = false;
-        downloadBtn.textContent = 'Download';
+        resetDownloadState();
     }
 });
+
+
+function resetDownloadState() {
+    isDownloading = false;
+    
+    // Re-enable all inputs
+    videoUrlInput.disabled = false;
+    downloadBtn.disabled = false;
+    downloadBtn.textContent = 'Download';
+    
+    // Re-enable format radio buttons
+    formatOptions.forEach(option => option.disabled = false);
+    
+    // Re-enable quality radio buttons
+    const qualityRadios = document.querySelectorAll('input[name="quality"]');
+    qualityRadios.forEach(radio => radio.disabled = false);
+    
+    // Re-validate current URL
+    updateButtonState();
+}
 
 function showStatus(message, type) {
     statusDiv.innerHTML = message;
